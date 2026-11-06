@@ -1,0 +1,100 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  breadcrumbs?: { name: string; path: string }[];
+}
+
+const { title, description, breadcrumbs } = Astro.props;
+const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : undefined;
+const websiteStructuredData = Astro.site ? {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'SQL Practice',
+  url: new URL('/', Astro.site).toString(),
+  description: 'A simple place to learn SQL, explore databases, and practice queries at your own pace.',
+} : undefined;
+const breadcrumbStructuredData = Astro.site && breadcrumbs ? {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: breadcrumbs.map((crumb, index) => ({
+    '@type': 'ListItem', position: index + 1, name: crumb.name, item: new URL(crumb.path, Astro.site).toString(),
+  })),
+} : undefined;
+const navigation = [
+  { label: 'Playground', href: '/playground/' },
+  { label: 'Practice', href: '/practice/' },
+  { label: 'Databases', href: '/databases/' },
+];
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SQL Practice" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {websiteStructuredData && <script type="application/ld+json" set:html={JSON.stringify(websiteStructuredData).replaceAll('<', '\\u003c')} />}
+    {breadcrumbStructuredData && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbStructuredData).replaceAll('<', '\\u003c')} />}
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-white text-slate-900 antialiased selection:bg-teal-100 selection:text-teal-950">
+    <header class="border-b border-slate-200">
+      <div class="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8">
+        <a href="/" class="group inline-flex shrink-0 items-center gap-2.5" aria-label="SQL Practice home">
+          <span class="grid size-8 place-items-center rounded-lg bg-teal-700 text-white" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="none" class="size-5" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 5.25C4 4.01 6.69 3 10 3s6 1.01 6 2.25S13.31 7.5 10 7.5 4 6.49 4 5.25Z" stroke="currentColor" stroke-width="1.5" />
+              <path d="M4 5.25v4.5C4 11 6.69 12 10 12c1.1 0 2.13-.12 3-.34M4 9.75V14.5c0 1.24 2.69 2.25 6 2.25 1.13 0 2.19-.13 3.08-.35M16 5.25v4.5M16 9.75v1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="m12.5 14.5 1.5 1.5 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="text-[15px] font-semibold tracking-tight text-slate-900">SQL Practice</span>
+        </a>
+
+        <nav aria-label="Main navigation" class="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-start sm:gap-2">
+          {navigation.map((item) => {
+            const active = currentPath === item.href.replace(/\/$/, '');
+            return (
+              <a
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                class:list={[
+                  'rounded-md px-2.5 py-2 text-sm font-medium transition-colors sm:px-3',
+                  active ? 'text-teal-800' : 'text-slate-600 hover:text-slate-950',
+                ]}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="border-t border-slate-200">
+      <div class="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <a href="/" class="font-medium text-slate-700 hover:text-teal-800">SQL Practice</a>
+        <p>Small steps. Better SQL.</p>
+      </div>
+    </footer>
+  </body>
+</html>

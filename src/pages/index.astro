@@ -1,16 +1,96 @@
 ---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { databases } from '../data/databases';
+
+const title = 'SQL Practice — Learn SQL by doing';
+const description = 'A simple place to learn SQL, explore databases, and practice queries at your own pace.';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<SiteLayout title={title} description={description}>
+  <main>
+    <section class="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-28">
+      <div class="max-w-xl">
+        <p class="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-teal-800">
+          <span class="size-2 rounded-full bg-teal-600" aria-hidden="true"></span>
+          Learn SQL at your own pace
+        </p>
+        <h1 class="text-4xl font-semibold leading-[1.12] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.5rem]">
+          Get comfortable with SQL, one query at a time.
+        </h1>
+        <p class="mt-6 max-w-lg text-lg leading-8 text-slate-600">
+          Explore a database, write a query, and see what it returns. A straightforward way to build practical SQL skills.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-4">
+          <a href="/playground/" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
+            Open the playground
+            <svg viewBox="0 0 20 20" fill="none" class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 10h12m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+          <a href="/practice/" class="px-1 py-3 text-sm font-semibold text-slate-700 hover:text-teal-800">Explore practice</a>
+        </div>
+        <p class="mt-5 text-sm text-slate-500">No setup. Just a place to start learning.</p>
+      </div>
+
+      <div class="relative mx-auto w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+          <div class="flex items-center gap-2" aria-hidden="true">
+            <span class="size-2.5 rounded-full bg-slate-300"></span>
+            <span class="size-2.5 rounded-full bg-slate-300"></span>
+            <span class="size-2.5 rounded-full bg-slate-300"></span>
+          </div>
+          <span class="text-xs font-medium text-slate-500">A query, at a glance</span>
+          <span class="w-10"></span>
+        </div>
+        <div class="overflow-x-auto px-5 py-6 font-mono text-sm leading-7 sm:px-7 sm:py-7">
+          <p><span class="text-violet-700">SELECT</span> <span class="text-slate-800">name, city</span></p>
+          <p><span class="text-violet-700">FROM</span> <span class="text-teal-800">customers</span></p>
+          <p><span class="text-violet-700">WHERE</span> <span class="text-slate-800">city = </span><span class="text-amber-700">'London'</span><span class="text-slate-800">;</span></p>
+        </div>
+        <div class="border-t border-slate-200 bg-white px-5 py-4 sm:px-7">
+          <div class="mb-3 flex items-center justify-between">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Results</p>
+            <span class="text-xs text-slate-400">2 rows</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-64 text-left text-sm">
+              <thead class="text-xs text-slate-500"><tr><th class="pb-2 pr-5 font-medium">name</th><th class="pb-2 font-medium">city</th></tr></thead>
+              <tbody class="border-t border-slate-100 text-slate-700">
+                <tr><td class="py-2 pr-5">Avery Stone</td><td class="py-2">London</td></tr>
+                <tr><td class="py-2 pr-5">Jordan Lee</td><td class="py-2">London</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-y border-slate-200 bg-slate-50/70">
+      <div class="mx-auto grid max-w-6xl gap-8 px-5 py-14 sm:px-8 sm:py-16 md:grid-cols-[0.75fr_1.25fr] md:gap-16">
+        <div>
+          <p class="text-sm font-semibold text-teal-800">A practical way to learn</p>
+          <h2 class="mt-3 text-2xl font-semibold tracking-tight text-slate-950">Practice makes it click.</h2>
+        </div>
+        <div class="max-w-2xl">
+          <p class="text-base leading-7 text-slate-600">SQL is easier to understand when you can try it for yourself. Start with the basics, explore a few tables, and learn by seeing how each query changes the results.</p>
+          <a href="/practice/" class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-teal-800 hover:text-teal-950">
+            See how practice works <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-16">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="text-sm font-semibold text-teal-800">Explore the data</p>
+          <h2 class="mt-3 text-2xl font-semibold tracking-tight text-slate-950">Start with a database.</h2>
+        </div>
+        <a href="/databases/" class="inline-flex items-center gap-2 py-2 text-sm font-semibold text-teal-800 hover:text-teal-950">Browse databases <span aria-hidden="true">→</span></a>
+      </div>
+      <ul class="mt-8 divide-y divide-slate-200 border-y border-slate-200">
+        {databases.map((database) => <li class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"><a href={`/databases/${database.id}/`} class="font-semibold text-slate-800 hover:text-teal-800">{database.name}</a><span class="text-sm text-slate-500">{database.summary}</span></li>)}
+      </ul>
+    </section>
+  </main>
+</SiteLayout>

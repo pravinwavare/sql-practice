@@ -1,0 +1,35 @@
+---
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import { questions, questionBySlug, topics } from '../../../data/questions';
+export function getStaticPaths() { return questions.map((question) => ({ params:{ slug:question.slug } })); }
+const question = questionBySlug[Astro.params.slug ?? ''];
+const topic = topics.find((item) => item.slug === question.topic)!;
+const title = `${question.title} — SQL Practice`;
+const description = `${question.prompt} Try this ${question.difficulty} SQL exercise in the browser.`;
+const breadcrumbs = [{name:'Practice',path:'/practice/'},{name:topic.title,path:`/practice/${topic.slug}/`},{name:question.title,path:`/practice/questions/${question.slug}/`}];
+---
+<SiteLayout title={title} description={description} breadcrumbs={breadcrumbs}>
+  <main data-question-slug={question.slug} class="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+    <nav aria-label="Breadcrumb" class="text-sm text-slate-500"><a href="/practice/" class="hover:text-teal-800">Practice</a><span aria-hidden="true"> / </span><a href={`/practice/${topic.slug}/`} class="hover:text-teal-800">{topic.title}</a></nav>
+    <div class="mt-5 flex flex-wrap items-center justify-between gap-3"><h1 class="text-3xl font-semibold tracking-tight text-slate-950">{question.title}</h1><span class="rounded-full bg-slate-100 px-3 py-1 text-xs capitalize text-slate-600">{question.difficulty}</span></div>
+    <p class="mt-3 max-w-3xl leading-7 text-slate-600">{question.prompt}</p>
+    <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div class="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div class="border-b border-slate-200 px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Hospital Database · SQLite</p></div>
+        <div id="sql-editor" class="min-h-64" aria-label="SQL answer editor"></div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3"><button id="show-hint" class="text-sm font-medium text-slate-600 hover:text-slate-900">Show hint</button><div class="flex gap-2"><button id="reset-query" class="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700">Reset query</button><button id="run-query" class="rounded-md bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-800">Check answer</button></div></div>
+      </div>
+      <aside class="space-y-4">
+        <div class="rounded-lg border border-slate-200 p-4"><h2 class="text-sm font-semibold text-slate-900">A small hint</h2><p id="question-hint" class="mt-2 text-sm leading-6 text-slate-600" hidden>{question.hint}</p><p class="mt-2 text-sm text-slate-500">Use the table and columns shown in the playground schema.</p></div>
+        <div class="rounded-lg border border-slate-200 p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Your progress</p><p id="question-status" class="mt-2 text-sm text-slate-600" data-completed="false">Attempts are saved on this device.</p></div>
+      </aside>
+    </div>
+    <div class="mt-5 rounded-lg border border-slate-200 bg-white">
+      <div class="border-b border-slate-200 px-4 py-3"><p id="question-message" class="text-sm text-slate-600" role="status" aria-live="polite">Run your SQL answer to see the returned rows and check it.</p></div>
+      <div id="question-output" class="max-w-full overflow-x-auto p-2" aria-label="Query results"></div>
+      <div class="border-t border-slate-200 px-4 py-3"><div class="flex flex-wrap gap-4"><button id="reveal-solution" class="text-sm font-medium text-teal-800 hover:text-teal-950">Reveal example solution</button><button id="show-expected-result" class="text-sm font-medium text-teal-800 hover:text-teal-950">Show expected result</button></div><pre id="question-solution" class="mt-3 overflow-x-auto rounded-md bg-slate-50 p-3 text-sm text-slate-700" hidden><code>{question.solution}</code></pre><div id="expected-result-output" class="mt-3 max-w-full overflow-x-auto" hidden></div></div>
+    </div>
+    <script>import '../../../scripts/practice-question';</script>
+    <a href={`/practice/${topic.slug}/`} class="mt-7 inline-flex text-sm font-semibold text-teal-800">← More {topic.title.toLowerCase()} questions</a>
+  </main>
+</SiteLayout>

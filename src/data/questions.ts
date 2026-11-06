@@ -1,0 +1,69 @@
+import type { DatabaseId } from './databases';
+
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export interface Question {
+  slug: string; title: string; topic: string; difficulty: Difficulty; prompt: string;
+  hint: string; solution: string; databaseId: DatabaseId; ordered?: boolean;
+}
+
+type Draft = [string, string, string, Difficulty, string, string, string];
+const drafts: Draft[] = [
+  ['select-all','Read every patient','select','easy','Return every column for all patients.','Use SELECT * with the patients table.','SELECT * FROM patients;'],
+  ['select-names','Choose patient names','select','easy','Return each patient’s first name, last name, and city.','List the three columns after SELECT.','SELECT first_name, last_name, city FROM patients;'],
+  ['select-doctors','List doctor specialties','select','easy','Show each doctor’s first name and specialization.','Use the doctors table.','SELECT first_name, specialization FROM doctors;'],
+  ['select-admissions','Read admission details','select','easy','Return the admission id, diagnosis, and admission date for every admission.','Use admissions.','SELECT admission_id, diagnosis, admission_date FROM admissions;'],
+  ['where-city','Patients in Toronto','where','easy','Find the first and last names of patients who live in Toronto.','Filter city with WHERE.','SELECT first_name, last_name FROM patients WHERE city = \'Toronto\';'],
+  ['where-gender','Female patients','where','easy','Return the patient id and names for patients recorded as female.','gender stores F and M.','SELECT patient_id, first_name, last_name FROM patients WHERE gender = \'F\';'],
+  ['where-salary','Doctors above 180000','where','easy','Find doctors whose salary is greater than 180000. Return their names and salary.','Use a numeric comparison.','SELECT first_name, last_name, salary FROM doctors WHERE salary > 180000;'],
+  ['where-diagnosis','Find diabetes admissions','where','easy','Return admissions whose diagnosis is Diabetes.','Compare the diagnosis text exactly.','SELECT admission_id, patient_id, diagnosis FROM admissions WHERE diagnosis = \'Diabetes\';'],
+  ['distinct-cities','Unique patient cities','distinct','easy','List each city represented in the patients table once.','DISTINCT removes duplicates.','SELECT DISTINCT city FROM patients ORDER BY city;'],
+  ['distinct-specialties','Unique specialties','distinct','easy','Show the distinct doctor specializations.','Use DISTINCT on specialization.','SELECT DISTINCT specialization FROM doctors ORDER BY specialization;'],
+  ['order-patients','Newest registrations','order','easy','Return patient names and registration dates, newest registrations first.','Sort registration_date descending.','SELECT first_name, last_name, registration_date FROM patients ORDER BY registration_date DESC;'],
+  ['order-top-salaries','Top paid doctors','order','easy','Return the three highest paid doctors and their salaries.','Combine ORDER BY and LIMIT.','SELECT first_name, last_name, salary FROM doctors ORDER BY salary DESC LIMIT 3;'],
+  ['order-admissions','Earliest admissions','order','easy','Show the five earliest admission dates and diagnoses.','Sort ascending and limit to five.','SELECT admission_date, diagnosis FROM admissions ORDER BY admission_date LIMIT 5;'],
+  ['count-patients','Count patients','aggregate','easy','Return the total number of patients in one row.','COUNT(*) counts rows.','SELECT COUNT(*) AS patient_count FROM patients;'],
+  ['avg-salary','Average doctor salary','aggregate','easy','Calculate the average doctor salary.','Use AVG(salary).','SELECT AVG(salary) AS average_salary FROM doctors;'],
+  ['min-max-height','Shortest and tallest patients','aggregate','easy','Return the minimum and maximum patient height.','Use MIN and MAX.','SELECT MIN(height) AS shortest, MAX(height) AS tallest FROM patients;'],
+  ['sum-salaries','Total salary budget','aggregate','easy','Calculate the sum of all doctor salaries.','Use SUM(salary).','SELECT SUM(salary) AS salary_total FROM doctors;'],
+  ['group-city-count','Patients per city','group','easy','For each city, return the number of patients. Sort by city.','Group by city.','SELECT city, COUNT(*) AS patient_count FROM patients GROUP BY city ORDER BY city;'],
+  ['group-gender-average','Average height by gender','group','medium','Return the average height for each gender.','Group on gender.','SELECT gender, AVG(height) AS average_height FROM patients GROUP BY gender ORDER BY gender;'],
+  ['group-diagnoses','Admission count per diagnosis','group','medium','Show each diagnosis and how many admissions have it, highest count first.','Group the admissions rows by diagnosis.','SELECT diagnosis, COUNT(*) AS admission_count FROM admissions GROUP BY diagnosis ORDER BY admission_count DESC, diagnosis;'],
+  ['group-specialty-salary','Salary by specialty','group','medium','For each specialization, calculate average salary and show highest averages first.','Aggregate doctors by specialization.','SELECT specialization, AVG(salary) AS average_salary FROM doctors GROUP BY specialization ORDER BY average_salary DESC;'],
+  ['group-month-admissions','Admissions per diagnosis','group','medium','Count admissions per diagnosis with more than three admissions; show the largest counts first.','Filter groups using HAVING.','SELECT diagnosis, COUNT(*) AS admission_count FROM admissions GROUP BY diagnosis HAVING COUNT(*) > 3 ORDER BY admission_count DESC, diagnosis;'],
+  ['having-high-average','Specialties with high average pay','having','medium','Show specializations whose average salary exceeds 175000, highest average first.','HAVING applies after grouping.','SELECT specialization, AVG(salary) AS average_salary FROM doctors GROUP BY specialization HAVING AVG(salary) > 175000 ORDER BY average_salary DESC;'],
+  ['having-many-patients','Cities with at least four patients','having','medium','Return cities with at least four patients and their counts.','Group by city and use HAVING.','SELECT city, COUNT(*) AS patient_count FROM patients GROUP BY city HAVING COUNT(*) >= 4 ORDER BY city;'],
+  ['join-admission-patients','Admissions with patient names','join','medium','For each admission, show its id, diagnosis, and the patient’s full name. Order by admission id.','Join admissions.patient_id to patients.patient_id.','SELECT a.admission_id, a.diagnosis, p.first_name, p.last_name FROM admissions AS a JOIN patients AS p ON a.patient_id = p.patient_id ORDER BY a.admission_id;'],
+  ['join-doctor-admissions','Admissions with attending doctors','join','medium','Show each admission diagnosis beside the attending doctor’s name. Sort by admission id.','Join admissions.doctor_id to doctors.doctor_id.','SELECT a.diagnosis, d.first_name, d.last_name FROM admissions AS a JOIN doctors AS d ON a.doctor_id = d.doctor_id ORDER BY a.admission_id;'],
+  ['join-city-diagnosis','Diagnoses for Toronto patients','join','medium','List each diagnosis and patient city for admissions involving Toronto patients, in admission order.','Join admissions to patients and filter city.','SELECT a.diagnosis, p.city FROM admissions a JOIN patients p ON p.patient_id = a.patient_id WHERE p.city = \'Toronto\' ORDER BY a.admission_id;'],
+  ['join-doctor-count','Admissions per doctor','join','medium','Show each doctor’s name and number of admissions, including doctors with none. Sort by admission count, highest first.','Use LEFT JOIN and COUNT(admission_id).','SELECT d.first_name, d.last_name, COUNT(a.admission_id) AS admission_count FROM doctors d LEFT JOIN admissions a ON a.doctor_id = d.doctor_id GROUP BY d.doctor_id ORDER BY admission_count DESC, d.last_name;'],
+  ['join-patient-admission-count','Patients with admission counts','join','medium','Return every patient name and their number of admissions, including patients with no admissions. Order by patient id.','Start from patients and LEFT JOIN admissions.','SELECT p.patient_id, p.first_name, p.last_name, COUNT(a.admission_id) AS admission_count FROM patients p LEFT JOIN admissions a ON a.patient_id = p.patient_id GROUP BY p.patient_id ORDER BY p.patient_id;'],
+  ['join-filter-specialty','Cardiology patient visits','join','medium','Show patient names and admission diagnoses for visits handled by Cardiology doctors, in admission order.','Join all three tables.','SELECT p.first_name, p.last_name, a.diagnosis FROM admissions a JOIN patients p ON p.patient_id = a.patient_id JOIN doctors d ON d.doctor_id = a.doctor_id WHERE d.specialization = \'Cardiology\' ORDER BY a.admission_id;'],
+  ['join-admission-duration','Patient and admission dates','join','medium','List patient names with each admission and discharge date, ordered by admission date.','Join patients and admissions.','SELECT p.first_name, p.last_name, a.admission_date, a.discharge_date FROM patients p JOIN admissions a ON p.patient_id = a.patient_id ORDER BY a.admission_date;'],
+  ['subquery-above-average','Doctors above average salary','subquery','medium','Return the names and salaries of doctors earning above the overall average.','Compare salary to a scalar AVG subquery.','SELECT first_name, last_name, salary FROM doctors WHERE salary > (SELECT AVG(salary) FROM doctors) ORDER BY salary DESC;'],
+  ['subquery-most-admissions','Patients with multiple admissions','subquery','medium','Return patients who have more than one admission.','Use a grouped subquery or correlated count.','SELECT patient_id, first_name, last_name FROM patients p WHERE (SELECT COUNT(*) FROM admissions a WHERE a.patient_id = p.patient_id) > 1 ORDER BY patient_id;'],
+  ['subquery-long-admission','Admissions with above-average bills','subquery','medium','Find admissions with a billing amount above the average bill for all admissions.','Compare billing_amount to a scalar AVG subquery.','SELECT admission_id, billing_amount FROM admissions WHERE billing_amount > (SELECT AVG(billing_amount) FROM admissions) ORDER BY billing_amount DESC;'],
+  ['subquery-no-admissions','Patients without admissions','subquery','hard','Find patients who have never had an admission.','NOT EXISTS is useful here.','SELECT p.patient_id, p.first_name, p.last_name FROM patients p WHERE NOT EXISTS (SELECT 1 FROM admissions a WHERE a.patient_id = p.patient_id) ORDER BY p.patient_id;'],
+  ['case-height-group','Classify patient height','case','hard','Return each patient id and label height as short (<160), average (160–180), or tall (>180).','Use CASE with ordered WHEN conditions.','SELECT patient_id, CASE WHEN height < 160 THEN \'Short\' WHEN height <= 180 THEN \'Average\' ELSE \'Tall\' END AS height_group FROM patients ORDER BY patient_id;'],
+  ['case-salary-band','Salary bands','case','hard','Label each doctor salary as Under 160k, 160k to 189999, or 190k and above.','Build a CASE expression.','SELECT first_name, salary, CASE WHEN salary < 160000 THEN \'Under 160k\' WHEN salary < 190000 THEN \'160k to 189999\' ELSE \'190k and above\' END AS salary_band FROM doctors ORDER BY salary DESC;'],
+  ['case-admission-status','Admission length category','case','hard','Return each admission id and label it as Open when discharge_date is NULL, otherwise Closed.','Use CASE WHEN discharge_date IS NULL.','SELECT admission_id, CASE WHEN discharge_date IS NULL THEN \'Open\' ELSE \'Closed\' END AS status FROM admissions ORDER BY admission_id;'],
+  ['null-phone','Patients without a phone','null','hard','Find patients whose contact number is missing.','Use IS NULL.','SELECT patient_id, first_name, last_name FROM patients WHERE contact_number IS NULL ORDER BY patient_id;'],
+  ['null-phone-label','Show missing phones clearly','null','hard','Return every patient name and a phone value, replacing missing numbers with “Not provided”.','Use COALESCE.','SELECT first_name, last_name, COALESCE(contact_number, \'Not provided\') AS phone FROM patients ORDER BY patient_id;'],
+];
+
+const orderedQuestions = new Set(['order-patients','order-top-salaries','order-admissions','group-city-count','group-diagnoses','group-specialty-salary','group-month-admissions','having-high-average','join-admission-patients','join-doctor-admissions','join-city-diagnosis','join-doctor-count','join-patient-admission-count','join-filter-specialty','join-admission-duration','null-phone']);
+export const questions: Question[] = drafts.map(([slug,title,topic,difficulty,prompt,hint,solution]) => ({ slug,title,topic,difficulty,prompt,hint,solution,databaseId:'hospital' as DatabaseId, ordered:orderedQuestions.has(slug) }));
+export const topics = [
+  { slug:'select', title:'Selecting columns', description:'Choose which data to return.' },
+  { slug:'where', title:'Filtering rows', description:'Filter data with WHERE conditions.' },
+  { slug:'distinct', title:'Distinct values', description:'Find unique values in a column.' },
+  { slug:'order', title:'Sorting and limits', description:'Order query results and limit rows.' },
+  { slug:'aggregate', title:'Aggregate functions', description:'Summarise rows with COUNT, AVG, MIN, MAX, and SUM.' },
+  { slug:'group', title:'GROUP BY', description:'Summarise data within groups.' },
+  { slug:'having', title:'HAVING', description:'Filter grouped results.' },
+  { slug:'join', title:'Joins', description:'Combine related tables.' },
+  { slug:'subquery', title:'Subqueries', description:'Use one query inside another.' },
+  { slug:'case', title:'CASE expressions', description:'Return conditional values.' },
+  { slug:'null', title:'NULL values', description:'Find and handle missing data.' },
+];
+export const questionBySlug = Object.fromEntries(questions.map((question) => [question.slug, question])) as Record<string, Question>;
+export function questionsForTopic(slug: string) { return questions.filter((question) => question.topic === slug); }
