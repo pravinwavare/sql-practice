@@ -1,4 +1,4 @@
-export type DatabaseId = 'hospital' | 'company' | 'ecommerce';
+export type DatabaseId = 'hospital' | 'company' | 'ecommerce' | 'custom';
 export type SeedValue = string | number | null;
 
 export interface ColumnDefinition {
@@ -295,8 +295,8 @@ export const databases: DatabaseDefinition[] = [
   },
 ];
 
-export const databaseById = Object.fromEntries(databases.map((database) => [database.id, database])) as Record<DatabaseId, DatabaseDefinition>;
-export const defaultDatabaseId: DatabaseId = 'hospital';
+export const databaseById = Object.fromEntries(databases.map((database) => [database.id, database])) as Record<Exclude<DatabaseId, 'custom'>, DatabaseDefinition>;
+export const defaultDatabaseId: Exclude<DatabaseId, 'custom'> = 'hospital';
 
 export function getRecordCount(database: DatabaseDefinition, tableName: string) {
   return database.tables.find((table) => table.name === tableName)?.rows.length ?? 0;

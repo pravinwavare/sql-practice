@@ -4,11 +4,14 @@
       <h2 id="editor-heading" class="text-sm font-semibold text-slate-900">SQL editor</h2>
       <p class="mt-0.5 text-xs text-slate-500">SQLite</p>
     </div>
-    <span class="hidden items-center gap-1.5 text-xs text-slate-500 sm:inline-flex">
+      <span class="hidden items-center gap-1.5 text-xs text-slate-500 sm:inline-flex">
       <kbd id="run-shortcut-key" class="rounded border border-slate-200 bg-slate-50 px-1.5 py-1 font-sans text-[11px] text-slate-600">Ctrl</kbd>
       <span>+</span>
       <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-1 font-sans text-[11px] text-slate-600">Enter</kbd>
       <span class="ml-1">to run</span>
+        <span class="ml-2 text-slate-300">·</span>
+        <kbd id="format-shortcut-label" class="rounded border border-slate-200 bg-slate-50 px-1.5 py-1 font-sans text-[11px] text-slate-600">Ctrl+Shift+F</kbd>
+        <span>to format</span>
     </span>
   </div>
 
@@ -17,6 +20,7 @@
   <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
     <p class="text-xs text-slate-500">Your query stays in this browser.</p>
     <div class="flex items-center gap-2">
+      <button id="clear-query" type="button" class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">Clear</button>
       <button id="format-query" type="button" class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">Format</button>
       <button id="reset-query" type="button" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">Reset</button>
       <button id="run-query" type="button" class="inline-flex items-center gap-2 rounded-md bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">

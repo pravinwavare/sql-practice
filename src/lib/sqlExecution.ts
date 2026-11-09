@@ -94,6 +94,40 @@ const totalChanges = (database: Database) => {
   return Number(result[0]?.values[0]?.[0] ?? 0);
 };
 
+const isSingleSelect = (source: string) => {
+  let cursor = 0;
+  let depth = 0;
+  let command = '';
+  let withQuery = false;
+  let semicolons = 0;
+  while (cursor < source.length) {
+    const char = source[cursor]!;
+    if (/\s/.test(char)) { cursor += 1; continue; }
+    if (char === '-' && source[cursor + 1] === '-') { cursor += 2; while (cursor < source.length && source[cursor] !== '\n') cursor += 1; continue; }
+    if (char === '/' && source[cursor + 1] === '*') { cursor += 2; while (cursor < source.length && !(source[cursor] === '*' && source[cursor + 1] === '/')) cursor += 1; cursor = Math.min(source.length, cursor + 2); continue; }
+    if (char === "'" || char === '"' || char === '`' || char === '[') {
+      const closing = char === '[' ? ']' : char; cursor += 1;
+      while (cursor < source.length) {
+        if (source[cursor] === closing) { if (source[cursor + 1] === closing && char !== '[') { cursor += 2; continue; } cursor += 1; break; }
+        cursor += 1;
+      }
+      continue;
+    }
+    if (char === '(') { depth += 1; cursor += 1; continue; }
+    if (char === ')') { depth = Math.max(0, depth - 1); cursor += 1; continue; }
+    if (char === ';' && depth === 0) { semicolons += 1; cursor += 1; continue; }
+    if (depth === 0 && /[A-Za-z_]/.test(char)) {
+      const start = cursor++;
+      while (cursor < source.length && /[A-Za-z0-9_$]/.test(source[cursor]!)) cursor += 1;
+      const word = source.slice(start, cursor).toUpperCase();
+      if (!command && word === 'WITH') withQuery = true;
+      else if (!command && !withQuery && word !== 'RECURSIVE') command = word;
+      else if (withQuery && ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'REPLACE'].includes(word)) command = word;
+    } else cursor += 1;
+  }
+  return command === 'SELECT' && semicolons <= 1;
+};
+
 export function executeSql(database: Database, query: string, displayLimit: number): SqlExecutionResult {
   const startedAt = performance.now();
   const emptyQuery = query.trim().length === 0;
@@ -109,14 +143,13 @@ export function executeSql(database: Database, query: string, displayLimit: numb
     };
   });
 
-  if (!emptyQuery && resultSets.length === 0) {
+  // sql.js omits column metadata for empty SELECTs. Never prepare DDL/DML again.
+  if (!emptyQuery && resultSets.length === 0 && isSingleSelect(query)) {
     const statement = database.prepare(query);
     try {
       const columns = statement.getColumnNames();
       if (columns.length > 0) resultSets.push({ columns, rows: [], rowCount: 0, truncatedRows: 0 });
-    } finally {
-      statement.free();
-    }
+    } finally { statement.free(); }
   }
 
   return {

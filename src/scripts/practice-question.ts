@@ -3,7 +3,7 @@ import { sql, SQLite } from '@codemirror/lang-sql';
 import { keymap } from '@codemirror/view';
 import { questions } from '../data/questions';
 import { SqlWorkerClient } from '../lib/sqlWorkerClient';
-import { readProgress, writeAttempt } from '../lib/progress';
+import { readProgress, recordAttempt } from '../lib/progress';
 import type { QueryResultSet, SqlValue } from '../lib/sqlProtocol';
 
 const slug = document.querySelector<HTMLElement>('[data-question-slug]')?.dataset.questionSlug;
@@ -48,9 +48,10 @@ if (question && host && checkButton) {
       const response=await engine.validate(editor.state.doc.toString(),activeQuestion.solution,activeQuestion.ordered ?? false);
       render(response.resultSets);
       if (message) { message.textContent=response.message; message.className=`text-sm font-medium ${response.correct?'text-emerald-700':'text-amber-700'}`; }
-      writeAttempt(activeQuestion.slug,response.correct);
+      const progress = recordAttempt(activeQuestion.slug,response.correct);
       progressStatus?.setAttribute('data-completed',String(response.correct));
       updateProgress();
+      if (!progress.saved && message) message.textContent += ' Progress could not be saved on this device.';
     } catch (error) { if(message) { message.textContent=error instanceof Error?error.message:'Could not check this query.'; message.className='text-sm text-rose-700'; } }
     finally { button.disabled=false; button.textContent='Check answer'; }
   }

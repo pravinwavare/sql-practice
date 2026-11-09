@@ -1,0 +1,190 @@
+---
+import { databases } from '../data/databases';
+import { questions, topics } from '../data/questions';
+import { referenceCategories, referenceEntries } from '../data/reference';
+---
+
+<aside id="learning-panel" class="learning-panel" aria-label="Practice questions and SQL reference">
+  <div class="learning-panel-head">
+    <div><span class="panel-kicker">Learn as you query</span><h2>Practice & reference</h2></div>
+    <span class="question-count">{questions.length} questions</span>
+  </div>
+  <div class="learning-tabs" role="tablist" aria-label="Learning tools">
+    <button type="button" id="questions-tab" role="tab" aria-selected="true" aria-controls="questions-panel">Questions</button>
+    <button type="button" id="reference-tab" role="tab" aria-selected="false" aria-controls="reference-panel">SQL reference</button>
+    <button type="button" id="notes-tab" role="tab" aria-selected="false" aria-controls="notes-panel">Notes</button>
+  </div>
+
+  <section id="questions-panel" role="tabpanel" aria-labelledby="questions-tab" class="learning-tab-panel">
+    <div class="question-filters">
+      <label class="sr-only" for="question-search">Search practice questions</label>
+      <input id="question-search" type="search" placeholder="Search questions…" autocomplete="off" />
+      <div class="filter-pair">
+        <label><span>Topic</span><select id="question-topic-filter"><option value="all">All topics</option>{topics.map((topic) => <option value={topic.slug}>{topic.title}</option>)}</select></label>
+        <label><span>Level</span><select id="question-difficulty-filter"><option value="all">Any level</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+      </div>
+      <label><span>Database</span><select id="question-database-filter"><option value="all">Any database</option>{databases.map((database) => <option value={database.id}>{database.name}</option>)}</select></label>
+      <button type="button" id="start-practice" class="start-practice">Pick a random question <span aria-hidden="true">→</span></button>
+    </div>
+
+    <div class="active-question" aria-live="polite">
+      <div class="active-question-top"><span id="active-question-topic" class="topic-chip">Choose a question</span><span id="active-question-difficulty" class="difficulty-chip"></span></div>
+      <h3 id="active-question-title">Start with a challenge</h3>
+      <p id="active-question-prompt">Pick any question below or let us choose one for you. Your answer is checked when you run it.</p>
+      <div class="question-actions">
+        <button type="button" id="question-previous" disabled>Previous</button>
+        <button type="button" id="question-next" disabled>Next</button>
+        <button type="button" id="question-expected-toggle" disabled>Show expected output</button>
+        <button type="button" id="question-hint-toggle" disabled>Show hint</button>
+        <button type="button" id="question-solution-toggle" disabled>Show solution</button>
+        <a id="open-full-question" href="/practice/" hidden>Full exercise ↗</a>
+      </div>
+      <p id="active-question-hint" class="question-extra" hidden></p>
+      <pre id="active-question-solution" class="question-solution" hidden><code></code></pre>
+      <p id="question-grade" class="question-grade" role="status" aria-live="polite">Select a question to begin.</p>
+      <div id="question-expected-output" class="expected-output" hidden aria-live="polite"></div>
+    </div>
+
+    <div class="question-list-heading"><span>Question list</span><span id="question-result-count">{questions.length} available</span></div>
+    <div id="question-list" class="question-list" aria-label="Filtered practice questions">
+      {questions.map((question) => <button type="button" data-question-item={question.slug} data-topic={question.topic} data-difficulty={question.difficulty} data-database={question.databaseId} class="question-list-item">
+        <span class="question-list-main"><strong>{question.title}</strong><span>{topics.find((topic) => topic.slug === question.topic)?.title ?? question.topic}</span></span>
+        <span class:list={['list-difficulty', `level-${question.difficulty}`]}>{question.difficulty}</span>
+      </button>)}
+    </div>
+    <p id="question-empty" class="empty-filter" hidden>No questions match those filters. Try a broader search.</p>
+  </section>
+
+  <section id="reference-panel" role="tabpanel" aria-labelledby="reference-tab" class="learning-tab-panel" hidden>
+    <div class="reference-search-wrap">
+      <label class="sr-only" for="reference-search">Search the SQL reference</label>
+      <input id="reference-search" type="search" placeholder="Find a SQL topic…" autocomplete="off" />
+      <label class="sr-only" for="reference-category-filter">Filter reference category</label>
+      <select id="reference-category-filter"><option value="all">All categories</option>{referenceCategories.map((category) => <option value={category}>{category}</option>)}</select>
+    </div>
+    <div id="reference-list" class="reference-list">
+      {referenceEntries.map((entry) => <button type="button" data-reference-item={entry.slug} data-category={entry.category} class="reference-item"><span>{entry.title}</span><span>{entry.category}</span></button>)}
+    </div>
+    <article id="reference-detail" class="reference-detail" aria-live="polite">
+      <span id="reference-detail-category" class="topic-chip">SQL guide</span>
+      <h3 id="reference-detail-title">Choose a topic</h3>
+      <p id="reference-detail-summary">Search or browse the reference for a quick explanation and example.</p>
+      <pre><code id="reference-detail-example">SELECT * FROM patients LIMIT 10;</code></pre>
+      <button type="button" id="insert-reference-example">Insert example into editor</button>
+    </article>
+  </section>
+
+  <section id="notes-panel" role="tabpanel" aria-labelledby="notes-tab" class="learning-tab-panel notes-panel" hidden>
+    <div class="notes-scroll">
+      <p class="notes-intro">Quick explanations for common query patterns.</p>
+      <article class="learning-note"><h3>Filter rows with WHERE</h3><p>WHERE keeps only rows that match a condition. Use AND or OR to combine rules.</p><pre><code>SELECT first_name, city
+FROM patients
+WHERE city = 'Toronto';</code></pre></article>
+      <article class="learning-note"><h3>Summarize with GROUP BY</h3><p>GROUP BY makes one group per shared value. Aggregate functions such as COUNT and AVG summarize each group.</p><pre><code>SELECT city, COUNT(*) AS people
+FROM patients
+GROUP BY city;</code></pre></article>
+      <article class="learning-note"><h3>Combine tables with JOIN</h3><p>JOIN matches related rows. The ON clause states which key columns connect the tables.</p><pre><code>SELECT p.first_name, a.diagnosis
+FROM patients AS p
+JOIN admissions AS a
+  ON a.patient_id = p.patient_id;</code></pre></article>
+      <article class="learning-note"><h3>LEFT JOIN</h3><p>LEFT JOIN includes every row from the first table. Missing matches from the second table appear as NULL.</p></article>
+      <article class="learning-note"><h3>WHERE and HAVING</h3><p>WHERE filters individual rows before grouping. HAVING filters grouped results after aggregate calculations.</p></article>
+      <h3 class="notes-subheading">Your notes</h3>
+      <form id="personal-note-form" class="personal-note-form">
+        <label for="personal-note-title">Title</label><input id="personal-note-title" maxlength="80" required placeholder="e.g. Remember LEFT JOIN" />
+        <label for="personal-note-body">Explanation or example</label><textarea id="personal-note-body" maxlength="1000" rows="3" required placeholder="Write a short note…"></textarea>
+        <button type="submit">Save note on this device</button>
+      </form>
+      <div id="personal-notes" class="personal-notes" aria-live="polite"></div>
+    </div>
+  </section>
+</aside>
+
+<script>
+  import { mountLearningPanel } from '../scripts/learning-panel';
+  mountLearningPanel();
+</script>
+
+<style>
+  .learning-panel { display:flex; min-width:0; min-height:560px; max-height:calc(100vh - 158px); flex-direction:column; overflow:hidden; border-left:1px solid #e3ebe8; background:#fff; color:#243a39; }
+  .learning-panel-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:16px 15px 12px; }
+  .panel-kicker { color:#188068; font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .learning-panel-head h2 { margin:4px 0 0; color:#213a37; font-size:15px; font-weight:750; letter-spacing:-.02em; }
+  .question-count { flex:none; border-radius:999px; padding:5px 8px; background:#eff6f2; color:#52716a; font-size:10px; font-weight:650; }
+  .learning-tabs { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; padding:0 12px 11px; }
+  .learning-tabs button { min-height:33px; border:1px solid transparent; border-radius:7px; background:transparent; color:#778783; cursor:pointer; font-size:11px; font-weight:700; }
+  .learning-tabs button.is-active { border-color:#d8e9e1; background:#f0f7f3; color:#176e59; }
+  .learning-tab-panel { display:flex; min-height:0; flex:1; flex-direction:column; overflow:hidden; }
+  .learning-tab-panel[hidden] { display:none; }
+  .question-filters { display:grid; gap:8px; padding:0 13px 12px; }
+  .question-filters input, .question-filters select, .reference-search-wrap input, .reference-search-wrap select { width:100%; min-width:0; height:34px; border:1px solid #dfe8e4; border-radius:7px; padding:0 9px; outline:none; background:#fff; color:#344947; font:inherit; font-size:11px; }
+  .question-filters input:focus, .question-filters select:focus, .reference-search-wrap input:focus, .reference-search-wrap select:focus { border-color:#55a68c; box-shadow:0 0 0 3px #e4f4ed; }
+  .filter-pair { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .question-filters label:not(.sr-only) { display:grid; gap:4px; color:#86938f; font-size:9px; font-weight:700; }
+  .start-practice { display:flex; align-items:center; justify-content:space-between; min-height:35px; border:0; border-radius:7px; padding:0 10px; background:#176f5d; color:#fff; cursor:pointer; font-size:11px; font-weight:700; }
+  .start-practice:hover { background:#125947; }
+  .start-practice:disabled { cursor:not-allowed; opacity:.5; }
+  .active-question { margin:0 12px 10px; border:1px solid #e1ebe6; border-radius:9px; padding:11px; background:#f7faf8; }
+  .active-question-top { display:flex; align-items:center; justify-content:space-between; gap:7px; }
+  .topic-chip, .difficulty-chip { display:inline-flex; align-items:center; min-height:20px; border-radius:999px; padding:3px 7px; background:#e7f2ec; color:#42675b; font-size:9px; font-weight:750; }
+  .difficulty-chip:empty { display:none; }
+  .level-easy { background:#e6f4ec; color:#16744f; }.level-medium { background:#fff3d7; color:#94651a; }.level-hard { background:#fae7e6; color:#a6443d; }
+  .active-question h3 { margin:8px 0 4px; color:#253b37; font-size:13px; line-height:1.35; }
+  .active-question > p:not(.question-grade):not(.question-extra) { margin:0; color:#687a75; font-size:11px; line-height:1.5; }
+  .question-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+  .question-actions button, .question-actions a { border:1px solid #dce8e2; border-radius:6px; padding:5px 7px; background:#fff; color:#43645a; cursor:pointer; font-size:9px; font-weight:700; text-decoration:none; }
+  .question-actions button:disabled { cursor:not-allowed; opacity:.45; }
+  .question-extra { margin:8px 0 0; border-left:2px solid #68ad91; padding:5px 8px; color:#536b62; font-size:10px; line-height:1.5; }
+  .question-solution { max-height:140px; overflow:auto; margin:8px 0 0; border:1px solid #e0e9e4; border-radius:6px; padding:8px; background:#fff; color:#354b46; font-size:10px; white-space:pre-wrap; }
+  .question-grade { margin:9px 0 0; color:#75827e; font-size:10px; line-height:1.4; }
+  .expected-output { max-height:220px; overflow:auto; margin-top:8px; border:1px solid #dce8e2; border-radius:6px; background:#fff; }
+  .expected-output table { min-width:100%; border-collapse:collapse; text-align:left; font-size:10px; }
+  .expected-output th, .expected-output td { border-bottom:1px solid #e9efec; padding:6px 8px; white-space:nowrap; }
+  .expected-output th { background:#f1f6f3; color:#536b62; font-weight:700; }
+  .expected-output td { color:#344947; }
+  .expected-output td.is-null { color:#9aa6a2; font-style:italic; }
+  .question-grade.is-correct { color:#16805c; font-weight:750; }.question-grade.is-incorrect { color:#a66a16; font-weight:650; }
+  .question-list-heading { display:flex; justify-content:space-between; padding:7px 15px; border-top:1px solid #edf1ef; color:#657772; font-size:9px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; }
+  .question-list-heading span:last-child { color:#9aa6a2; font-weight:600; letter-spacing:0; text-transform:none; }
+  .question-list { min-height:0; flex:1; overflow:auto; padding:0 8px 8px; }
+  .question-list-item { display:flex; width:100%; align-items:center; justify-content:space-between; gap:7px; border:0; border-radius:7px; padding:8px 7px; background:transparent; color:#304440; cursor:pointer; text-align:left; }
+  .question-list-item[hidden], .reference-item[hidden], #active-question-hint[hidden], #active-question-solution[hidden], #open-full-question[hidden] { display:none !important; }
+  .question-list-item:hover, .question-list-item.is-active { background:#f0f7f3; }
+  .question-list-item.is-solved .question-list-main strong::after { content:'  ✓'; color:#17805d; }
+  .question-list-main { display:grid; min-width:0; gap:3px; }
+  .question-list-main strong { overflow:hidden; color:#3d514c; font-size:10px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+  .question-list-main span { color:#929e9a; font-size:9px; }
+  .list-difficulty { flex:none; border-radius:999px; padding:3px 6px; font-size:8px; font-weight:750; text-transform:capitalize; }
+  .empty-filter { margin:0; padding:18px 15px; color:#86938f; font-size:11px; line-height:1.5; }
+  .reference-search-wrap { display:grid; gap:7px; padding:0 13px 10px; }
+  .reference-list { display:grid; min-height:0; grid-template-columns:1fr 1fr; align-content:start; gap:4px; overflow:auto; padding:0 10px 10px; }
+  .reference-item { display:grid; gap:3px; border:1px solid #edf1ef; border-radius:7px; padding:7px; background:#fff; color:#4c605a; cursor:pointer; text-align:left; }
+  .reference-item:hover, .reference-item.is-active { border-color:#c4dfd2; background:#f2f8f4; }
+  .reference-item span:first-child { font-size:10px; font-weight:750; }
+  .reference-item span:last-child { color:#93a09b; font-size:8px; }
+  .reference-detail { margin:0 12px 12px; border-top:1px solid #e9efec; padding:11px 2px 0; }
+  .reference-detail h3 { margin:7px 0 4px; color:#2c4540; font-size:13px; }
+  .reference-detail p { margin:0; color:#71807a; font-size:10px; line-height:1.5; }
+  .reference-detail pre { max-height:135px; overflow:auto; margin:8px 0; border-radius:7px; padding:9px; background:#f2f6f4; color:#34534a; font-size:9px; white-space:pre-wrap; }
+  #insert-reference-example { min-height:29px; border:1px solid #d8e7e0; border-radius:6px; padding:0 8px; background:#fff; color:#33735f; cursor:pointer; font-size:9px; font-weight:700; }
+  .notes-scroll { overflow:auto; padding:0 13px 16px; }
+  .notes-intro { margin:0 0 9px; color:#687a75; font-size:11px; }
+  .learning-note { margin-bottom:8px; border:1px solid #e4ece8; border-radius:8px; padding:9px; background:#fbfdfc; }
+  .learning-note h3, .notes-subheading { margin:0 0 4px; color:#2c4540; font-size:11px; font-weight:750; }
+  .learning-note p { margin:0; color:#687a75; font-size:10px; line-height:1.5; }
+  .learning-note pre { overflow:auto; margin:7px 0 0; border-radius:5px; padding:7px; background:#f0f5f2; color:#34534a; font-size:9px; }
+  .notes-subheading { margin:14px 0 7px; font-size:12px; }
+  .personal-note-form { display:grid; gap:5px; }
+  .personal-note-form label { color:#687a75; font-size:9px; font-weight:700; }
+  .personal-note-form input, .personal-note-form textarea { width:100%; border:1px solid #dfe8e4; border-radius:6px; padding:7px; background:#fff; color:#344947; font:inherit; font-size:10px; }
+  .personal-note-form button { min-height:31px; border:0; border-radius:6px; background:#176f5d; color:white; cursor:pointer; font-size:10px; font-weight:700; }
+  .personal-notes { display:grid; gap:7px; margin-top:9px; }
+  .personal-note { border:1px solid #e4ece8; border-radius:7px; padding:8px; }
+  .personal-note header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .personal-note h4 { margin:0; color:#2c4540; font-size:10px; }
+  .personal-note button { border:0; background:transparent; color:#9b4f48; cursor:pointer; font-size:9px; }
+  .personal-note p { margin:5px 0 0; color:#687a75; font-size:10px; line-height:1.5; white-space:pre-wrap; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+  @media(max-width:1120px) { .learning-panel { min-height:420px; max-height:620px; border-left:0; } .question-list { display:grid; grid-template-columns:1fr 1fr; align-content:start; } }
+  @media(max-width:620px) { .learning-panel { min-height:580px; max-height:75vh; border-top:1px solid #e3ebe8; } .question-list { display:block; } }
+</style>

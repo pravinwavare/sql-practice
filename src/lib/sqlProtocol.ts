@@ -12,13 +12,19 @@ interface RequestBase {
   requestId: RequestId;
 }
 
+export interface ImportedSchema {
+  tables: { name: string; columns: { name: string; type: string; primaryKey: boolean; references?: { table: string; column: string } }[] }[];
+  relationships: { fromTable: string; fromColumn: string; toTable: string; toColumn: string; description: string }[];
+}
+
 export type SqlWorkerRequest =
   | (RequestBase & { type: 'INITIALIZE' })
   | (RequestBase & { type: 'EXECUTE'; sql: string })
   | (RequestBase & { type: 'VALIDATE'; sql: string; solution: string; ordered: boolean })
   | (RequestBase & { type: 'RESET' })
   | (RequestBase & { type: 'SWITCH_DATABASE'; databaseId: import('../data/databases').DatabaseId })
-  | (RequestBase & { type: 'LOAD_DATABASE'; databaseId: import('../data/databases').DatabaseId; buffer: ArrayBuffer; resetSnapshot?: ArrayBuffer });
+  | (RequestBase & { type: 'LOAD_DATABASE'; databaseId: import('../data/databases').DatabaseId; buffer: ArrayBuffer; resetSnapshot?: ArrayBuffer; databaseName?: string })
+  | (RequestBase & { type: 'IMPORT_DATABASE'; name: string; format: 'sqlite' | 'sql'; buffer: ArrayBuffer });
 
 interface ResponseBase {
   requestId: RequestId;
@@ -32,6 +38,7 @@ export type SqlWorkerResponse =
       databaseName: string;
       databaseSnapshot: ArrayBuffer;
       originalSnapshot: ArrayBuffer;
+      schema: ImportedSchema;
     })
   | (ResponseBase & {
       type: 'RESULT';

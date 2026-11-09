@@ -7,7 +7,8 @@ type SqlWorkerPayload =
   | { type: 'VALIDATE'; sql: string; solution: string; ordered: boolean }
   | { type: 'RESET' }
   | { type: 'SWITCH_DATABASE'; databaseId: DatabaseId }
-  | { type: 'LOAD_DATABASE'; databaseId: DatabaseId; buffer: ArrayBuffer; resetSnapshot?: ArrayBuffer };
+  | { type: 'LOAD_DATABASE'; databaseId: DatabaseId; buffer: ArrayBuffer; resetSnapshot?: ArrayBuffer; databaseName?: string }
+  | { type: 'IMPORT_DATABASE'; name: string; format: 'sqlite' | 'sql'; buffer: ArrayBuffer };
 
 type ResponseFor<Type extends SqlWorkerResponse['type']> = Extract<SqlWorkerResponse, { type: Type }>;
 
@@ -64,6 +65,12 @@ export class SqlWorkerClient {
     const buffer = copy.buffer as ArrayBuffer;
     const resetSnapshot = copy.slice().buffer as ArrayBuffer;
     return this.send({ type: 'LOAD_DATABASE', databaseId, buffer, resetSnapshot }, 15_000, [buffer, resetSnapshot]) as Promise<ResponseFor<'READY'>>;
+  }
+
+  async importDatabase(name: string, format: 'sqlite' | 'sql', data: Uint8Array): Promise<ResponseFor<'READY'>> {
+    await this.ensureReady();
+    const buffer = data.slice().buffer as ArrayBuffer;
+    return this.send({ type: 'IMPORT_DATABASE', name, format, buffer }, 20_000, [buffer]) as Promise<ResponseFor<'READY'>>;
   }
 
   dispose() {
@@ -200,7 +207,7 @@ export class SqlWorkerClient {
         const transfer: Transferable[] = [buffer];
         if (resetSnapshot) transfer.push(resetSnapshot);
         const loaded = await this.send(
-          { type: 'LOAD_DATABASE', databaseId, buffer, resetSnapshot: resetSnapshot ?? undefined },
+          { type: 'LOAD_DATABASE', databaseId, buffer, resetSnapshot: resetSnapshot ?? undefined, databaseName: databaseId === 'custom' ? 'Your database' : undefined },
           15_000,
           transfer,
           true,

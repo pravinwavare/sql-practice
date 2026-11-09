@@ -24,15 +24,13 @@ const breadcrumbStructuredData = Astro.site && breadcrumbs ? {
   })),
 } : undefined;
 const navigation = [
-  { label: 'Playground', href: '/playground/' },
   { label: 'Practice', href: '/practice/' },
-  { label: 'Databases', href: '/databases/' },
 ];
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
 ---
 
 <!doctype html>
-<html lang="en" class="scroll-smooth">
+<html lang="en" class="scroll-smooth" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -49,23 +47,26 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
     <meta name="twitter:description" content={description} />
     {websiteStructuredData && <script type="application/ld+json" set:html={JSON.stringify(websiteStructuredData).replaceAll('<', '\\u003c')} />}
     {breadcrumbStructuredData && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbStructuredData).replaceAll('<', '\\u003c')} />}
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f5f8f7" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <title>{title}</title>
+    <script is:inline>
+      try { document.documentElement.dataset.theme = localStorage.getItem('sql-practice-theme-v1') === 'dark' ? 'dark' : 'light'; } catch {}
+    </script>
   </head>
-  <body class="min-h-screen bg-white text-slate-900 antialiased selection:bg-teal-100 selection:text-teal-950">
-    <header class="border-b border-slate-200">
-      <div class="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8">
+  <body class="min-h-screen bg-[#f8faf9] text-slate-900 antialiased selection:bg-teal-100 selection:text-teal-950">
+    <header class="border-b border-[#e4ebe8] bg-white">
+      <div class="mx-auto flex max-w-[1560px] flex-col items-start gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8">
         <a href="/" class="group inline-flex shrink-0 items-center gap-2.5" aria-label="SQL Practice home">
-          <span class="grid size-8 place-items-center rounded-lg bg-teal-700 text-white" aria-hidden="true">
+          <span class="grid size-9 place-items-center rounded-xl bg-[#173f3a] text-white shadow-sm" aria-hidden="true">
             <svg viewBox="0 0 20 20" fill="none" class="size-5" xmlns="http://www.w3.org/2000/svg">
               <path d="M4 5.25C4 4.01 6.69 3 10 3s6 1.01 6 2.25S13.31 7.5 10 7.5 4 6.49 4 5.25Z" stroke="currentColor" stroke-width="1.5" />
               <path d="M4 5.25v4.5C4 11 6.69 12 10 12c1.1 0 2.13-.12 3-.34M4 9.75V14.5c0 1.24 2.69 2.25 6 2.25 1.13 0 2.19-.13 3.08-.35M16 5.25v4.5M16 9.75v1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
               <path d="m12.5 14.5 1.5 1.5 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
-          <span class="text-[15px] font-semibold tracking-tight text-slate-900">SQL Practice</span>
+          <span class="text-[15px] font-bold tracking-tight text-[#193633]">SQL Practice<span class="ml-2 hidden text-[10px] font-semibold uppercase tracking-[.16em] text-[#8b9a96] sm:inline">Learn by doing</span></span>
         </a>
 
         <nav aria-label="Main navigation" class="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-start sm:gap-2">
@@ -77,24 +78,48 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
                 aria-current={active ? 'page' : undefined}
                 class:list={[
                   'rounded-md px-2.5 py-2 text-sm font-medium transition-colors sm:px-3',
-                  active ? 'text-teal-800' : 'text-slate-600 hover:text-slate-950',
+                  active ? 'bg-[#eef6f2] text-[#176a57]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950',
                 ]}
               >
                 {item.label}
               </a>
             );
           })}
+          <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Switch to dark theme" aria-pressed="false">
+            <span id="theme-toggle-icon" aria-hidden="true">☾</span><span id="theme-toggle-label">Dark</span>
+          </button>
         </nav>
       </div>
     </header>
 
     <slot />
 
-    <footer class="border-t border-slate-200">
-      <div class="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-        <a href="/" class="font-medium text-slate-700 hover:text-teal-800">SQL Practice</a>
-        <p>Small steps. Better SQL.</p>
+    <footer class="border-t border-[#e4ebe8] bg-white">
+      <div class="mx-auto flex max-w-[1560px] flex-col gap-2 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <a href="/" class="font-semibold text-slate-700 hover:text-teal-800">SQL Practice</a>
+        <p>Queries run privately in your browser.</p>
       </div>
     </footer>
+    <script>
+      const themeToggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
+      const themeLabel = document.querySelector<HTMLElement>('#theme-toggle-label');
+      const themeIcon = document.querySelector<HTMLElement>('#theme-toggle-icon');
+      const updateThemeControl = () => {
+        const isDark = document.documentElement.dataset.theme === 'dark';
+        themeToggle?.setAttribute('aria-pressed', String(isDark));
+        themeToggle?.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} theme`);
+        if (themeLabel) themeLabel.textContent = isDark ? 'Light' : 'Dark';
+        if (themeIcon) themeIcon.textContent = isDark ? '☀' : '☾';
+        document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#101916' : '#f5f8f7');
+      };
+      updateThemeControl();
+      themeToggle?.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('sql-practice-theme-v1', next); } catch {}
+        window.dispatchEvent(new CustomEvent('sql-theme-changed', { detail: { theme: next } }));
+        updateThemeControl();
+      });
+    </script>
   </body>
 </html>

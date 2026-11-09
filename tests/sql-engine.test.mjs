@@ -3,9 +3,11 @@ import { fileURLToPath } from 'node:url';
 import { after, before, test } from 'node:test';
 import { databases, defaultDatabaseId } from '../src/data/databases.ts';
 import { questions } from '../src/data/questions.ts';
+import { referenceEntries } from '../src/data/reference.ts';
 import { initializeSqlDatabases, executeSql } from '../src/lib/sqlExecution.ts';
 import { resultsMatch } from '../src/lib/answerValidation.ts';
-import { clearProgress, progressSummary, readProgress, writeAttempt } from '../src/lib/progress.ts';
+import { formatSql } from '../src/lib/sqlFormat.ts';
+import { clearProgress, progressSummary, readProgress, recordAttempt, writeAttempt } from '../src/lib/progress.ts';
 
 const wasmPath = fileURLToPath(new URL('../node_modules/sql.js/dist/sql-wasm.wasm', import.meta.url));
 let initialized;
@@ -61,10 +63,14 @@ test('database reset snapshots restore the original database contents', () => {
   altered.close(); reset.close();
 });
 
-test('practice catalog has 40 valid solutions that execute on clean database copies', () => {
-  assert.equal(questions.length, 40);
+test('practice catalog has 52 valid solutions that execute on clean database copies', () => {
+  assert.equal(questions.length, 52);
   const counts = Object.fromEntries(['easy','medium','hard'].map((difficulty) => [difficulty, questions.filter((question) => question.difficulty === difficulty).length]));
-  assert.deepEqual(counts, { easy:18, medium:16, hard:6 });
+  assert.deepEqual(counts, { easy:22, medium:21, hard:9 });
+  assert.equal(new Set(questions.map((question) => question.slug)).size, questions.length);
+  assert.deepEqual(questions.filter((question) => question.ordered !== /\bORDER\s+BY\b/i.test(question.solution)).map((question) => question.slug), [], 'ordered flag matches each solution ORDER BY');
+  assert.ok(questions.some((question) => question.databaseId === 'company'));
+  assert.ok(questions.some((question) => question.databaseId === 'ecommerce'));
   for (const question of questions) {
     const db = new initialized.SQL.Database(runtime(question.databaseId).originalSnapshot.slice());
     try {
@@ -75,11 +81,58 @@ test('practice catalog has 40 valid solutions that execute on clean database cop
   }
 });
 
+test('SQL reference topics are unique and syntax examples compile against their matching samples', () => {
+  assert.equal(new Set(referenceEntries.map((entry) => entry.slug)).size, referenceEntries.length);
+  assert.equal(new Set(referenceEntries.map((entry) => entry.title.toLowerCase())).size, referenceEntries.length);
+  for (const entry of referenceEntries) {
+    const dbId = /\b(employees|departments|salaries)\b/.test(entry.example) ? 'company'
+      : /\b(customers|products|orders|order_items)\b/.test(entry.example) ? 'ecommerce' : 'hospital';
+    const db = new initialized.SQL.Database(runtime(dbId).originalSnapshot.slice());
+    try {
+      try { executeSql(db, entry.example, 10_000); }
+      catch (error) { throw new Error(`${entry.slug}: ${error.message}`); }
+      if (entry.slug === 'any-all') assert.match(entry.summary, /does not implement/i);
+    } finally { db.close(); }
+  }
+});
+
 test('answer comparison ignores row order only when requested and handles NULL/numbers', () => {
   const a = [{columns:['value'],rows:[[1],[null],[2.5]],rowCount:3,truncatedRows:0}];
   const b = [{columns:['value'],rows:[[2.50000001],[1],[null]],rowCount:3,truncatedRows:0}];
   assert.equal(resultsMatch(a,b,false),true);
   assert.equal(resultsMatch(a,b,true),false);
+});
+
+test('answer comparison preserves types, NULLs, duplicate counts, and column order', () => {
+  const result = (columns, rows) => [{ columns, rows, rowCount: rows.length, truncatedRows: 0 }];
+  assert.equal(resultsMatch(result(['value'], [[1]]), result(['value'], [['1']])), false);
+  assert.equal(resultsMatch(result(['value'], [[null]]), result(['value'], [['NULL']])), false);
+  assert.equal(resultsMatch(result(['value'], [[1], [1], [2]]), result(['value'], [[2], [1], [1]])), true);
+  assert.equal(resultsMatch(result(['value'], [[1], [1], [2]]), result(['value'], [[2], [1], [3]])), false);
+  assert.equal(resultsMatch(result(['first', 'second'], [[1, 2]]), result(['second', 'first'], [[2, 1]])), false);
+  assert.equal(resultsMatch(result(['value'], [[1], [2]]), result(['value'], [[2], [1]]), true), false);
+  assert.equal(resultsMatch(result(['value'], [[1], [2]]), result(['value'], [[1], [2]]), true), true);
+});
+
+test('answer comparison validates multiple result sets and row shapes', () => {
+  const set = (columns, rows) => ({ columns, rows, rowCount: rows.length, truncatedRows: 0 });
+  assert.equal(resultsMatch([set(['a'], [[1]]), set(['b'], [[2]])], [set(['a'], [[1]]), set(['b'], [[2]])]), true);
+  assert.equal(resultsMatch([set(['a'], [[1]])], [set(['a'], [[1]]), set(['b'], [[2]])]), false);
+  assert.equal(resultsMatch([set(['a', 'b'], [[1]])], [set(['a', 'b'], [[1, 2]])]), false);
+});
+
+test('SQLite formatter preserves query behavior and leaves strings and comments intact', () => {
+  const original = "select first_name, city from patients where city='Toronto' and first_name like 'A%' order by patient_id; -- keep Case\n";
+  const formatted = formatSql(original);
+  assert.match(formatted, /SELECT first_name,\n  city\nFROM patients\nWHERE city = 'Toronto'\n  AND first_name LIKE 'A%'\nORDER BY patient_id;/);
+  assert.match(formatted, /-- keep Case/);
+  const db = runtime().database;
+  assert.equal(resultsMatch(executeSql(db, original, 200).resultSets, executeSql(db, formatted, 200).resultSets, true), true);
+  for (const question of questions) {
+    const testDb = new initialized.SQL.Database(runtime(question.databaseId).originalSnapshot.slice());
+    try { assert.equal(resultsMatch(executeSql(testDb, question.solution, 10_000).resultSets, executeSql(testDb, formatSql(question.solution), 10_000).resultSets, question.ordered ?? false), true, question.slug); }
+    finally { testDb.close(); }
+  }
 });
 
 test('e-commerce totals equal their line item subtotals', () => {
@@ -105,6 +158,16 @@ test('practice progress safely records, summarizes, recovers, and clears local d
   assert.deepEqual(readProgress(storage),{});
   clearProgress(storage);
   assert.equal(readProgress(storage)['select-all'],undefined);
+});
+
+test('progress writes report browser storage failures without throwing', () => {
+  const denied = { getItem() { throw new Error('storage disabled'); }, setItem() { throw new Error('quota exceeded'); } };
+  assert.doesNotThrow(() => writeAttempt('select-all', true, denied));
+  const write = recordAttempt('select-all', true, denied);
+  assert.equal(write.saved, false);
+  assert.equal(write.state['select-all'].correct, true);
+  const quota = { getItem() { return null; }, setItem() { throw new Error('quota exceeded'); } };
+  assert.equal(recordAttempt('select-all', false, quota).saved, false);
 });
 
 test('each database snapshot is separate and resettable without cross-database changes', () => {
